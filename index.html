@@ -403,24 +403,24 @@
                 <div class="code-area">
 <span class="cm">/* * MODULE: DATABASE SCHEMA INITIALIZATION
  * SYSTEM: Employee Participation Information System
- * DATE:   2023-10-27
+ * DATE:   2026-02-18
  * AUTH:   System Admin
  */</span>
 
-<span class="cm">-- =============================================</span>
+
 <span class="cm">-- 1. Create DEPARTMENT Table</span>
 <span class="cm">-- Parent entity containing organizational units</span>
-<span class="cm">-- =============================================</span>
+
 <span class="kw">CREATE TABLE</span> Department (
     Num_S <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
     Label <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
     Manager_Name <span class="tp">VARCHAR</span>(255)
 );
 
-<span class="cm">-- =============================================</span>
+
 <span class="cm">-- 2. Create EMPLOYEE Table</span>
 <span class="cm">-- Child entity linked to Department (1:N)</span>
-<span class="cm">-- =============================================</span>
+
 <span class="kw">CREATE TABLE</span> Employee (
     Num_E <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
     Name <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
@@ -433,10 +433,10 @@
         <span class="kw">ON UPDATE CASCADE</span>
 );
 
-<span class="cm">-- =============================================</span>
+
 <span class="cm">-- 3. Create PROJECT Table</span>
 <span class="cm">-- Child entity linked to Department (1:N)</span>
-<span class="cm">-- =============================================</span>
+
 <span class="kw">CREATE TABLE</span> Project (
     Num_P <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
     Title <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
@@ -448,10 +448,10 @@
         <span class="kw">ON DELETE CASCADE</span>
 );
 
-<span class="cm">-- =============================================</span>
+
 <span class="cm">-- 4. Create EMPLOYEE_PROJECT Table</span>
 <span class="cm">-- Associative Entity for M:N Relationship</span>
-<span class="cm">-- =============================================</span>
+
 <span class="kw">CREATE TABLE</span> Employee_Project (
     Employee_Num_E <span class="tp">INT</span>,
     Project_Num_P <span class="tp">INT</span>,
@@ -479,10 +479,10 @@
             <div class="editor-container">
                 <div class="line-numbers" id="dml-lines"></div>
                 <div class="code-area">
-<span class="cm">-- =============================================</span>
+
 <span class="cm">-- MOCK DATA GENERATION</span>
 <span class="cm">-- Populating tables for testing purposes</span>
-<span class="cm">-- =============================================</span>
+
 
 <span class="cm">-- 1. Populating Departments</span>
 <span class="kw">INSERT INTO</span> Department (Num_S, Label, Manager_Name) <span class="kw">VALUES</span>
