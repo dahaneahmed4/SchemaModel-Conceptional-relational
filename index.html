@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Studio: Employee Participation System</title>
+    <style>
+        /* =================================================================
+           1. CORE THEME & RESET
+           ================================================================= */
+        :root {
+            --bg-body: #0a0e14;
+            --bg-sidebar: #11161d;
+            --bg-panel: #161b22;
+            --bg-input: #0d1117;
+            
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-header: #f0f6fc;
+
+            --border: #30363d;
+            --accent: #58a6ff;
+            --accent-hover: #1f6feb;
+            --success: #238636;
+            --danger: #da3633;
+            --warning: #d29922;
+            
+            /* Syntax Highlighting */
+            --sql-keyword: #ff7b72;
+            --sql-type: #79c0ff;
+            --sql-string: #a5d6ff;
+            --sql-comment: #8b949e;
+            --sql-func: #d2a8ff;
+            --sql-num: #f2cc60;
+
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            --font-code: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) var(--bg-body);
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* =================================================================
+           2. SIDEBAR NAVIGATION
+           ================================================================= */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+        }
+
+        .brand {
+            padding: 20px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-header);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .nav-group {
+            padding: 15px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            padding-left: 10px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: 0.2s;
+            margin-bottom: 2px;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(177, 186, 196, 0.12);
+            color: var(--text-header);
+        }
+
+        .nav-item.active {
+            background-color: rgba(56, 139, 253, 0.15);
+            color: var(--accent);
+            border-left: 3px solid var(--accent);
+        }
+
+        .nav-icon { opacity: 0.7; }
+
+        .db-status {
+            margin-top: auto;
+            padding: 15px;
+            background: #0d1117;
+            border-top: 1px solid var(--border);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        .dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
+
+        /* =================================================================
+           3. MAIN CONTENT AREA
+           ================================================================= */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            height: 50px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .file-path {
+            font-family: var(--font-code);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .action-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .action-btn:hover { background: #2ea043; }
+        .action-btn.secondary { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); }
+        .action-btn.secondary:hover { border-color: var(--text-muted); }
+
+        /* =================================================================
+           4. CODE EDITOR / SQL VIEW
+           ================================================================= */
+        .content-view {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+            display: none; /* Hidden by default */
+            background-color: var(--bg-body);
+        }
+
+        .content-view.active { display: block; }
+
+        .editor-container {
+            display: flex;
+            min-height: 100%;
+        }
+
+        .line-numbers {
+            width: 50px;
+            background-color: var(--bg-body);
+            border-right: 1px solid var(--border);
+            padding: 20px 0;
+            text-align: right;
+            color: #484f58;
+            font-family: var(--font-code);
+            font-size: 13px;
+            line-height: 20px;
+            user-select: none;
+        }
+
+        .code-area {
+            flex: 1;
+            padding: 20px;
+            font-family: var(--font-code);
+            font-size: 13px;
+            line-height: 20px;
+            color: var(--text-main);
+            white-space: pre;
+        }
+
+        /* Syntax Highlighting Classes */
+        .kw { color: var(--sql-keyword); font-weight: bold; }
+        .tp { color: var(--sql-type); }
+        .str { color: var(--sql-string); }
+        .cm { color: var(--sql-comment); font-style: italic; }
+        .fn { color: var(--sql-func); }
+        .nm { color: var(--sql-num); }
+        .op { color: #d2a8ff; }
+
+        /* =================================================================
+           5. VISUAL DIAGRAM (ERD)
+           ================================================================= */
+        .erd-canvas {
+            padding: 40px;
+            background-image: radial-gradient(#30363d 1px, transparent 1px);
+            background-size: 20px 20px;
+            min-height: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 60px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .db-table {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 280px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+
+        .db-table:hover { transform: translateY(-5px); border-color: var(--accent); }
+
+        .table-header {
+            background: #21262d;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .table-rows { padding: 5px 0; }
+
+        .row {
+            padding: 6px 15px;
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-code);
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .row:last-child { border-bottom: none; }
+
+        .pk-badge { background: var(--warning); color: #000; padding: 1px 4px; border-radius: 3px; font-size: 10px; font-weight: bold; margin-right: 5px; }
+        .fk-badge { background: var(--accent); color: #fff; padding: 1px 4px; border-radius: 3px; font-size: 10px; font-weight: bold; margin-right: 5px; }
+        
+        /* =================================================================
+           6. TERMINAL SIMULATION
+           ================================================================= */
+        .terminal-wrapper {
+            background: #0d1117;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            font-family: var(--font-code);
+        }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            color: var(--text-main);
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .log-entry { margin-bottom: 5px; }
+        .log-success { color: var(--success); }
+        .log-error { color: var(--danger); }
+        .log-info { color: var(--accent); }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+        }
+
+        .prompt { color: var(--success); margin-right: 10px; font-weight: bold; }
+        
+        #sql-input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: var(--font-code);
+            width: 100%;
+            outline: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">SQL</div>
+            DB_Architect v2.0
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Schema Design</div>
+            <div class="nav-item active" onclick="switchTab('ddl')">
+                <span class="nav-icon">📄</span> Create Tables (DDL)
+            </div>
+            <div class="nav-item" onclick="switchTab('diagram')">
+                <span class="nav-icon">📊</span> Entity Diagram
+            </div>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Data Operations</div>
+            <div class="nav-item" onclick="switchTab('dml')">
+                <span class="nav-icon">💾</span> Populate Data (DML)
+            </div>
+            <div class="nav-item" onclick="switchTab('terminal')">
+                <span class="nav-icon">💻</span> SQL Terminal
+            </div>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-label">Documentation</div>
+            <div class="nav-item" onclick="switchTab('docs')">
+                <span class="nav-icon">📚</span> Data Dictionary
+            </div>
+        </div>
+
+        <div class="db-status">
+            <div class="status-indicator">
+                <div class="dot"></div>
+                Connection: Active (LocalHost)
+            </div>
+            <div style="font-size: 10px; color: #8b949e; margin-top: 5px;">
+                User: admin@employee_sys
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <header>
+            <div class="file-path">project / schemas / employee_system.sql</div>
+            <div style="display:flex; gap:10px;">
+                <button class="action-btn secondary" onclick="copyToClipboard()">Copy SQL</button>
+                <button class="action-btn" onclick="simulateRun()">Run Script ▶</button>
+            </div>
+        </header>
+
+        <div id="view-ddl" class="content-view active">
+            <div class="editor-container">
+                <div class="line-numbers" id="ddl-lines"></div>
+                <div class="code-area">
+<span class="cm">/* * MODULE: DATABASE SCHEMA INITIALIZATION
+ * SYSTEM: Employee Participation Information System
+ * DATE:   2023-10-27
+ * AUTH:   System Admin
+ */</span>
+
+<span class="cm">-- =============================================</span>
+<span class="cm">-- 1. Create DEPARTMENT Table</span>
+<span class="cm">-- Parent entity containing organizational units</span>
+<span class="cm">-- =============================================</span>
+<span class="kw">CREATE TABLE</span> Department (
+    Num_S <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
+    Label <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
+    Manager_Name <span class="tp">VARCHAR</span>(255)
+);
+
+<span class="cm">-- =============================================</span>
+<span class="cm">-- 2. Create EMPLOYEE Table</span>
+<span class="cm">-- Child entity linked to Department (1:N)</span>
+<span class="cm">-- =============================================</span>
+<span class="kw">CREATE TABLE</span> Employee (
+    Num_E <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
+    Name <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
+    Position <span class="tp">VARCHAR</span>(255),
+    Salary <span class="tp">DECIMAL</span>(10, 2),
+    Department_Num_S <span class="tp">INT</span>,
+    <span class="kw">CONSTRAINT</span> fk_emp_dept <span class="kw">FOREIGN KEY</span> (Department_Num_S) 
+        <span class="kw">REFERENCES</span> Department(Num_S)
+        <span class="kw">ON DELETE SET NULL</span>
+        <span class="kw">ON UPDATE CASCADE</span>
+);
+
+<span class="cm">-- =============================================</span>
+<span class="cm">-- 3. Create PROJECT Table</span>
+<span class="cm">-- Child entity linked to Department (1:N)</span>
+<span class="cm">-- =============================================</span>
+<span class="kw">CREATE TABLE</span> Project (
+    Num_P <span class="tp">INT</span> <span class="kw">PRIMARY KEY</span>,
+    Title <span class="tp">VARCHAR</span>(255) <span class="kw">NOT NULL</span>,
+    Start_Date <span class="tp">DATE</span>,
+    End_Date <span class="tp">DATE</span>,
+    Department_Num_S <span class="tp">INT</span>,
+    <span class="kw">CONSTRAINT</span> fk_proj_dept <span class="kw">FOREIGN KEY</span> (Department_Num_S) 
+        <span class="kw">REFERENCES</span> Department(Num_S)
+        <span class="kw">ON DELETE CASCADE</span>
+);
+
+<span class="cm">-- =============================================</span>
+<span class="cm">-- 4. Create EMPLOYEE_PROJECT Table</span>
+<span class="cm">-- Associative Entity for M:N Relationship</span>
+<span class="cm">-- =============================================</span>
+<span class="kw">CREATE TABLE</span> Employee_Project (
+    Employee_Num_E <span class="tp">INT</span>,
+    Project_Num_P <span class="tp">INT</span>,
+    Role <span class="tp">VARCHAR</span>(255),
+    
+    <span class="cm">-- Composite Primary Key</span>
+    <span class="kw">PRIMARY KEY</span> (Employee_Num_E, Project_Num_P),
+    
+    <span class="cm">-- Foreign Keys linking to parent tables</span>
+    <span class="kw">CONSTRAINT</span> fk_ep_emp <span class="kw">FOREIGN KEY</span> (Employee_Num_E) 
+        <span class="kw">REFERENCES</span> Employee(Num_E)
+        <span class="kw">ON DELETE CASCADE</span>,
+        
+    <span class="kw">CONSTRAINT</span> fk_ep_proj <span class="kw">FOREIGN KEY</span> (Project_Num_P) 
+        <span class="kw">REFERENCES</span> Project(Num_P)
+        <span class="kw">ON DELETE CASCADE</span>
+);
+
+<span class="cm">/* End of Schema Definition */</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-dml" class="content-view">
+            <div class="editor-container">
+                <div class="line-numbers" id="dml-lines"></div>
+                <div class="code-area">
+<span class="cm">-- =============================================</span>
+<span class="cm">-- MOCK DATA GENERATION</span>
+<span class="cm">-- Populating tables for testing purposes</span>
+<span class="cm">-- =============================================</span>
+
+<span class="cm">-- 1. Populating Departments</span>
+<span class="kw">INSERT INTO</span> Department (Num_S, Label, Manager_Name) <span class="kw">VALUES</span>
+(<span class="nm">10</span>, <span class="str">'Human Resources'</span>, <span class="str">'Alice Johnson'</span>),
+(<span class="nm">20</span>, <span class="str">'IT Development'</span>, <span class="str">'Robert Chen'</span>),
+(<span class="nm">30</span>, <span class="str">'Sales & Marketing'</span>, <span class="str">'Sarah Miller'</span>),
+(<span class="nm">40</span>, <span class="str">'Finance'</span>, <span class="str">'David Smith'</span>);
+
+<span class="cm">-- 2. Populating Employees</span>
+<span class="kw">INSERT INTO</span> Employee (Num_E, Name, Position, Salary, Department_Num_S) <span class="kw">VALUES</span>
+(<span class="nm">1001</span>, <span class="str">'John Doe'</span>, <span class="str">'Software Engineer'</span>, <span class="nm">85000.00</span>, <span class="nm">20</span>),
+(<span class="nm">1002</span>, <span class="str">'Jane Smith'</span>, <span class="str">'DevOps Specialist'</span>, <span class="nm">92000.00</span>, <span class="nm">20</span>),
+(<span class="nm">1003</span>, <span class="str">'Michael Brown'</span>, <span class="str">'HR Manager'</span>, <span class="nm">75000.00</span>, <span class="nm">10</span>),
+(<span class="nm">1004</span>, <span class="str">'Emily Davis'</span>, <span class="str">'Sales Representative'</span>, <span class="nm">65000.00</span>, <span class="nm">30</span>),
+(<span class="nm">1005</span>, <span class="str">'James Wilson'</span>, <span class="str">'Accountant'</span>, <span class="nm">70000.00</span>, <span class="nm">40</span>),
+(<span class="nm">1006</span>, <span class="str">'Linda Martinez'</span>, <span class="str">'Backend Developer'</span>, <span class="nm">88000.00</span>, <span class="nm">20</span>),
+(<span class="nm">1007</span>, <span class="str">'William Taylor'</span>, <span class="str">'Marketing Specialist'</span>, <span class="nm">62000.00</span>, <span class="nm">30</span>);
+
+<span class="cm">-- 3. Populating Projects</span>
+<span class="kw">INSERT INTO</span> Project (Num_P, Title, Start_Date, End_Date, Department_Num_S) <span class="kw">VALUES</span>
+(<span class="nm">501</span>, <span class="str">'Website Redesign'</span>, <span class="str">'2023-01-15'</span>, <span class="str">'2023-06-30'</span>, <span class="nm">20</span>),
+(<span class="nm">502</span>, <span class="str">'Q3 Recruitment Drive'</span>, <span class="str">'2023-07-01'</span>, <span class="str">'2023-09-30'</span>, <span class="nm">10</span>),
+(<span class="nm">503</span>, <span class="str">'Mobile App Launch'</span>, <span class="str">'2023-02-01'</span>, <span class="str">'2023-12-15'</span>, <span class="nm">20</span>),
+(<span class="nm">504</span>, <span class="str">'Annual Audit'</span>, <span class="str">'2023-11-01'</span>, <span class="str">'2023-12-31'</span>, <span class="nm">40</span>);
+
+<span class="cm">-- 4. Populating Employee_Project (Assignments)</span>
+<span class="kw">INSERT INTO</span> Employee_Project (Employee_Num_E, Project_Num_P, Role) <span class="kw">VALUES</span>
+(<span class="nm">1001</span>, <span class="nm">501</span>, <span class="str">'Frontend Lead'</span>),
+(<span class="nm">1006</span>, <span class="nm">501</span>, <span class="str">'Backend Support'</span>),
+(<span class="nm">1001</span>, <span class="nm">503</span>, <span class="str">'Mobile Architect'</span>),
+(<span class="nm">1002</span>, <span class="nm">503</span>, <span class="str">'CI/CD Engineer'</span>),
+(<span class="nm">1003</span>, <span class="nm">502</span>, <span class="str">'Recruiter'</span>),
+(<span class="nm">1005</span>, <span class="nm">504</span>, <span class="str">'Lead Auditor'</span>);
+
+<span class="cm">-- Verification Query Example</span>
+<span class="kw">SELECT</span> E.Name, P.Title, EP.Role 
+<span class="kw">FROM</span> Employee E
+<span class="kw">JOIN</span> Employee_Project EP <span class="kw">ON</span> E.Num_E = EP.Employee_Num_E
+<span class="kw">JOIN</span> Project P <span class="kw">ON</span> EP.Project_Num_P = P.Num_P;
+                </div>
+            </div>
+        </div>
+
+        <div id="view-diagram" class="content-view">
+            <div class="erd-canvas">
+                
+                <div class="db-table">
+                    <div class="table-header">Department</div>
+                    <div class="table-rows">
+                        <div class="row">
+                            <span><span class="pk-badge">PK</span>Num_S</span>
+                            <span class="tp">INT</span>
+                        </div>
+                        <div class="row">
+                            <span>Label</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                        <div class="row">
+                            <span>Manager_Name</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db-table">
+                    <div class="table-header">Employee</div>
+                    <div class="table-rows">
+                        <div class="row">
+                            <span><span class="pk-badge">PK</span>Num_E</span>
+                            <span class="tp">INT</span>
+                        </div>
+                        <div class="row">
+                            <span>Name</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                        <div class="row">
+                            <span>Position</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                        <div class="row">
+                            <span>Salary</span>
+                            <span class="tp">DECIMAL</span>
+                        </div>
+                        <div class="row">
+                            <span><span class="fk-badge">FK</span>Department_Num_S</span>
+                            <span class="tp">INT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db-table">
+                    <div class="table-header">Project</div>
+                    <div class="table-rows">
+                        <div class="row">
+                            <span><span class="pk-badge">PK</span>Num_P</span>
+                            <span class="tp">INT</span>
+                        </div>
+                        <div class="row">
+                            <span>Title</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                        <div class="row">
+                            <span>Start_Date</span>
+                            <span class="tp">DATE</span>
+                        </div>
+                        <div class="row">
+                            <span>End_Date</span>
+                            <span class="tp">DATE</span>
+                        </div>
+                        <div class="row">
+                            <span><span class="fk-badge">FK</span>Department_Num_S</span>
+                            <span class="tp">INT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db-table" style="border-style: dashed; border-color: #8b949e;">
+                    <div class="table-header">Employee_Project</div>
+                    <div class="table-rows">
+                        <div class="row">
+                            <span><span class="pk-badge">PK</span><span class="fk-badge">FK</span>Employee_Num_E</span>
+                            <span class="tp">INT</span>
+                        </div>
+                        <div class="row">
+                            <span><span class="pk-badge">PK</span><span class="fk-badge">FK</span>Project_Num_P</span>
+                            <span class="tp">INT</span>
+                        </div>
+                        <div class="row">
+                            <span>Role</span>
+                            <span class="tp">VARCHAR(255)</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="view-terminal" class="content-view">
+            <div class="terminal-wrapper">
+                <div class="terminal-output" id="term-out">
+                    <div class="log-entry">SQL Studio [Version 2.0.4]</div>
+                    <div class="log-entry">(c) 2023 Employee Systems Corp. All rights reserved.</div>
+                    <div class="log-entry"><br></div>
+                    <div class="log-entry">Connected to target database: <span class="log-info">EMPLOYEE_DB</span></div>
+                    <div class="log-entry">Type 'help' for commands or enter SQL queries.</div>
+                    <div class="log-entry"><br></div>
+                </div>
+                <div class="terminal-input-line">
+                    <span class="prompt">SQL&gt;</span>
+                    <input type="text" id="sql-input" autocomplete="off" spellcheck="false" autofocus>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-docs" class="content-view" style="padding: 40px;">
+            <h1 style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;">Data Dictionary</h1>
+            
+            <div style="background: var(--bg-panel); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 30px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead style="background: #21262d; color: var(--text-header);">
+                        <tr>
+                            <th style="padding: 12px 15px;">Table</th>
+                            <th style="padding: 12px 15px;">Column</th>
+                            <th style="padding: 12px 15px;">Type</th>
+                            <th style="padding: 12px 15px;">Constraints</th>
+                            <th style="padding: 12px 15px;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody style="font-family: var(--font-code); font-size: 13px;">
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px 15px; color: var(--accent);">Department</td>
+                            <td style="padding: 10px 15px;">Num_S</td>
+                            <td style="padding: 10px 15px;">INT</td>
+                            <td style="padding: 10px 15px;"><span class="pk-badge">PK</span></td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Unique Dept ID</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px 15px;"></td>
+                            <td style="padding: 10px 15px;">Label</td>
+                            <td style="padding: 10px 15px;">VARCHAR(255)</td>
+                            <td style="padding: 10px 15px;">NOT NULL</td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Name of department</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                            <td style="padding: 10px 15px; color: var(--accent);">Employee</td>
+                            <td style="padding: 10px 15px;">Num_E</td>
+                            <td style="padding: 10px 15px;">INT</td>
+                            <td style="padding: 10px 15px;"><span class="pk-badge">PK</span></td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Unique Employee ID</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                            <td style="padding: 10px 15px;"></td>
+                            <td style="padding: 10px 15px;">Department_Num_S</td>
+                            <td style="padding: 10px 15px;">INT</td>
+                            <td style="padding: 10px 15px;"><span class="fk-badge">FK</span></td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Links to Department</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px 15px; color: var(--accent);">Project</td>
+                            <td style="padding: 10px 15px;">Num_P</td>
+                            <td style="padding: 10px 15px;">INT</td>
+                            <td style="padding: 10px 15px;"><span class="pk-badge">PK</span></td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Unique Project ID</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                            <td style="padding: 10px 15px; color: var(--accent);">Employee_Project</td>
+                            <td style="padding: 10px 15px;">Role</td>
+                            <td style="padding: 10px 15px;">VARCHAR(255)</td>
+                            <td style="padding: 10px 15px;">-</td>
+                            <td style="padding: 10px 15px; color: var(--text-muted);">Job function in project</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h3>Constraint Logic</h3>
+            <p style="line-height: 1.6; color: var(--text-muted); max-width: 800px; margin-top: 10px;">
+                <strong>Foreign Keys & Cascading:</strong> <br>
+                1. <code>ON DELETE SET NULL</code> for Employees: If a Department is deleted, we do not want to fire the employees. Their department field becomes NULL, preserving the employee record.<br>
+                2. <code>ON DELETE CASCADE</code> for Assignments: If an Employee or Project is deleted, the record in <code>Employee_Project</code> is automatically removed to prevent orphaned data.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 1. Line Number Generation ---
+        function generateLineNumbers(elementId, count) {
+            const el = document.getElementById(elementId);
+            let html = '';
+            for(let i=1; i<=count; i++) {
+                html += `<div>${i}</div>`;
+            }
+            el.innerHTML = html;
+        }
+
+        // Initialize line numbers for code blocks
+        generateLineNumbers('ddl-lines', 55);
+        generateLineNumbers('dml-lines', 42);
+
+        // --- 2. Tab Switching Logic ---
+        function switchTab(viewName) {
+            // Remove active class from all views
+            document.querySelectorAll('.content-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            // Add active class to target
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            // Highlight nav item (simple loop matching)
+            const navItems = document.querySelectorAll('.nav-item');
+            if(viewName === 'ddl') navItems[0].classList.add('active');
+            if(viewName === 'diagram') navItems[1].classList.add('active');
+            if(viewName === 'dml') navItems[2].classList.add('active');
+            if(viewName === 'terminal') navItems[3].classList.add('active');
+            if(viewName === 'docs') navItems[4].classList.add('active');
+        }
+
+        // --- 3. Terminal Simulation ---
+        const termInput = document.getElementById('sql-input');
+        const termOut = document.getElementById('term-out');
+
+        termInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const cmd = this.value.trim();
+                if(cmd) {
+                    processCommand(cmd);
+                }
+                this.value = '';
+            }
+        });
+
+        function processCommand(cmd) {
+            // Echo command
+            const echo = document.createElement('div');
+            echo.className = 'log-entry';
+            echo.innerHTML = `<span style="color:#238636; font-weight:bold;">SQL&gt;</span> ${cmd}`;
+            termOut.appendChild(echo);
+
+            // Mock Responses
+            let response = '';
+            const lowerCmd = cmd.toLowerCase();
+
+            if (lowerCmd === 'help') {
+                response = `<span class="log-info">Available commands:</span><br>
+                            - show tables<br>
+                            - select * from employee<br>
+                            - desc department<br>
+                            - clear`;
+            } 
+            else if (lowerCmd === 'clear') {
+                termOut.innerHTML = '';
+                return;
+            }
+            else if (lowerCmd.includes('select') && lowerCmd.includes('from employee')) {
+                response = `
+                <table style="width:100%; text-align:left; color:#c9d1d9; margin-top:5px;">
+                    <tr style="color:#58a6ff;"><th>Num_E</th><th>Name</th><th>Position</th><th>Salary</th></tr>
+                    <tr><td>1001</td><td>John Doe</td><td>Software Eng</td><td>85000.00</td></tr>
+                    <tr><td>1002</td><td>Jane Smith</td><td>DevOps</td><td>92000.00</td></tr>
+                    <tr><td>1003</td><td>Michael Brown</td><td>HR Manager</td><td>75000.00</td></tr>
+                </table>
+                <div class="log-success" style="margin-top:5px;">3 rows selected. (0.02 sec)</div>`;
+            }
+            else if (lowerCmd === 'show tables') {
+                response = `
+                <div style="color:#d2a8ff;">Tables_in_employee_db</div>
+                <div>Department</div>
+                <div>Employee</div>
+                <div>Project</div>
+                <div>Employee_Project</div>`;
+            }
+            else if (lowerCmd.startsWith('create table')) {
+                response = `<span class="log-error">Error: Table already exists.</span>`;
+            }
+            else {
+                response = `<span class="log-error">Error: Syntax error or command not recognized. Type 'help'.</span>`;
+            }
+
+            // Append Response
+            const respDiv = document.createElement('div');
+            respDiv.className = 'log-entry';
+            respDiv.innerHTML = response;
+            termOut.appendChild(respDiv);
+
+            // Auto Scroll
+            termOut.scrollTop = termOut.scrollHeight;
+        }
+
+        // --- 4. Utilities ---
+        function copyToClipboard() {
+            // Simulating a copy of the DDL
+            alert("SQL Script copied to clipboard!");
+        }
+
+        function simulateRun() {
+            switchTab('terminal');
+            setTimeout(() => {
+                processCommand("source /project/schemas/employee_system.sql");
+            }, 500);
+            setTimeout(() => {
+                const successMsg = document.createElement('div');
+                successMsg.className = 'log-entry log-success';
+                successMsg.innerHTML = `Query OK, 0 rows affected (0.15 sec)<br>Records: 15  Duplicates: 0  Warnings: 0`;
+                termOut.appendChild(successMsg);
+            }, 1200);
+        }
+
+    </script>
+</body>
+</html>
